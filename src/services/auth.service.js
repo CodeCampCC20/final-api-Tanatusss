@@ -37,4 +37,6 @@ authService.findDoctorbyId=(id)=>{
     
   })
 }
+
+
 export default authService;

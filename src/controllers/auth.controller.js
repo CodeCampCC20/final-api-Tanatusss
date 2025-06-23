@@ -3,6 +3,8 @@ import hashService from "../services/hash.service.js"
 import jwtService from "../services/jwt.service.js"
 import createError from "../utils/create-error.js"
 import prisma from "../config/prisma.js"
+import bcrypt from "bcryptjs"
+import { number } from "yup"
 
 
 export const authUserRegister = async (req,res,next)=>{
@@ -153,15 +155,29 @@ export const getMeDoctor = async(req,res,next)=>{
 export const updateUser = async (req,res,next)=>{
   try{
     const {id} = req.user;
-    const {username} = req.body;
+    const {username,password} = req.body;
 
+    const existUser = await prisma.user.findFirst({
+      where:{
+        username:username
+      }
+    })
+
+    if(existUser){
+      createError(400,"User is already exist")
+    }
+    const passHash = await bcrypt.hash(password,10)
     const user = await prisma.user.update({
       where:{
         id:Number(id)
       },
       data:{
-        username: username
-      }
+        username: username,
+        password: passHash,
+      },
+      omit: {
+        password: true,
+      },
     })
     res.json({
       "id": user.id,
@@ -175,14 +191,23 @@ export const updateUser = async (req,res,next)=>{
 export const updateDoctor = async (req,res,next)=>{
   try{
     const {id} = req.doctor;
-    const {username,specialization} = req.body;
-
+    const {username,password,specialization} = req.body;
+    const existDoctor = await prisma.doctor.findFirst({
+      where:{
+        username:username
+      }
+    })
+    if(existDoctor){
+      createError(400,"User is already exist")
+    }
+    const passHash = await bcrypt.hash(password,10)
     const doctor = await prisma.doctor.update({
       where:{
         id:Number(id)
       },
       data:{
         username: username,
+        password: passHash,
         specialization: specialization
       }
     })
@@ -196,3 +221,123 @@ export const updateDoctor = async (req,res,next)=>{
   }
 }
 
+export const creatHealthUser= async(req,res,next)=>{
+  try{
+    const {type,value} = req.body
+    if(!type||!value){
+      createError(400,"Input value and type!")
+    }
+    await prisma.healthRecord.create({
+      data:{
+        type:type,
+        value:value,
+        userId: req.user.id,
+      }
+    })
+    res.json({"message": "create health record successfully"})
+  }catch(error){
+    next(error)
+  }
+}
+
+export const getAllHealthUser = async(req,res,next)=>{
+  try{
+    const allHealth = await prisma.healthRecord.findMany({
+      where:{
+        userId: req.user.id
+      }
+    })
+    res.json({allHealth})
+  }catch(error){
+    next(error)
+  }
+}
+
+
+export const getHealthByUser = async(req,res,next)=> {
+  try{
+    const {id} = req.params;
+    const healthUser = await prisma.healthRecord.findFirst({
+      where:{
+        id:Number(id)
+      }
+    })
+    res.json({healthUser})
+  }catch(error){
+    next(error);
+  }
+}
+
+
+export const updateHealthByUser = async(req,res,next)=> {
+  try{
+    const {type,value} = req.body
+    const {id} = req.params;
+    const existHealth = await prisma.healthRecord.findFirst({
+      where:{
+        id:Number(id)
+      }
+    })
+
+    if(!existHealth){
+      createError(400,"Fail!")
+    }
+    const updateHealth = await prisma.healthRecord.update({
+      where:{
+        id:Number(id),
+      },
+      data:{
+        type: type,
+        value: value
+      }
+    }) 
+    res.json({updateHealth})
+
+  }catch(error){
+    next(error)
+  }
+}
+
+export const deleteHealthUser = async(req,res,next)=>{
+  try{
+      const {id} = req.params;
+  const deleteHealth = await prisma.healthRecord.findFirst({
+    where:{
+      id:Number(id),
+    }
+  })
+  await prisma.healthRecord.delete({
+    where:{
+      id:Number(id),
+    },
+  })
+  res.json({message:"Delete success!!!"})
+  }catch(error){
+    next(error)
+  }
+}
+
+export const NoteDoctor = async(req,res,next)=>{
+  try{
+    const {userId, note} = req.body;
+
+    const existDoctor = await prisma.user.findFirst({
+      where:{
+        id: Number(userId),
+      }
+    })
+    if(!existDoctor){
+      createError(400,"ผิดพลาดทางเทคนิคนะครับ")
+    }
+    await prisma.doctorNote.create({
+      data:{
+        userId: existDoctor.id,
+        note: note,
+        doctorId: req.user.id
+      }
+    })
+      res.json({"message": "create doctor notes successfully"})
+  }catch(error){
+    next(error)
+  }
+}
