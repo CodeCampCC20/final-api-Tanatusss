@@ -20,12 +20,45 @@ export const authenticateUser = async(req,res,next)=>{
       const payload = jwtService.verifyUserToken(token);
       console.log('payload',payload)
 
-      const user = await authService.findUserbyUsername(payload.username)
+      const user = await authService.findUserbyId(payload.id)
       if(!user){
         createError(401, "Unauthorization !!!")
       }
-
+      console.log("user" ,user)
       req.user = user;
+
+      next();
+  }catch(error){
+    next(error)
+  }
+}
+
+
+
+export const authenticateDoctor = async(req,res,next)=>{
+  try{
+    const authorization = req.headers.authorization
+    console.log("authorization",authorization)
+
+    if(!authorization|| !authorization.startsWith('Bearer')){
+        createError(401, "Unauthorization !")
+      }
+      const token = authorization.split(" ")[1]
+      console.log('token',token)
+
+      if(!token){
+        createError(401, "Unauthorization !!")
+      }
+
+      const payload = jwtService.verifyDoctorToken(token);
+      console.log('payload',payload)
+
+      const doctor = await authService.findDoctorbyId(payload.id)
+      if(!doctor){
+        createError(401, "Unauthorization !!!")
+      }
+      console.log("doctor" ,doctor)
+      req.doctor = doctor;
 
       next();
   }catch(error){

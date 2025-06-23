@@ -2,8 +2,7 @@ import authService from "../services/auth.service.js"
 import hashService from "../services/hash.service.js"
 import jwtService from "../services/jwt.service.js"
 import createError from "../utils/create-error.js"
-
-
+import prisma from "../config/prisma.js"
 
 
 export const authUserRegister = async (req,res,next)=>{
@@ -115,19 +114,85 @@ export const authDoctorlogin = async(req,res,next)=>{
 
 export const getMeUser = async(req,res,next)=>{
   try{
-    const {id} = req.doctor;
+    const {id} = req.user;
     console.log(id)
-    const doctor = await prisma.user.findFirst({
+    const user = await prisma.user.findFirst({
       where:{
         id:Number(id)
-      },omit:{
-      password: true     //ไม่โชว์รหัสผ่าน
-    }
+      }
     })
     res.json({ 
-      "id": doctor.id
-      })
+      "id": user.id,
+      "username": user.username})
   }catch(error){
     next(error)
   }
 }
+
+
+export const getMeDoctor = async(req,res,next)=>{
+  try{
+    const {id} = req.doctor;
+    console.log(id)
+    const doctor = await prisma.doctor.findFirst({
+      where:{
+        id:Number(id)
+      }
+    })
+    res.json({ 
+      "id": doctor.id,
+      "username": doctor.username,
+      "specialization": doctor.specialization
+    })
+  }catch(error){
+    next(error)
+  }
+}
+
+
+export const updateUser = async (req,res,next)=>{
+  try{
+    const {id} = req.user;
+    const {username} = req.body;
+
+    const user = await prisma.user.update({
+      where:{
+        id:Number(id)
+      },
+      data:{
+        username: username
+      }
+    })
+    res.json({
+      "id": user.id,
+      "username": user.username
+})
+  }catch(error){
+    next(error)
+  }
+}
+
+export const updateDoctor = async (req,res,next)=>{
+  try{
+    const {id} = req.doctor;
+    const {username,specialization} = req.body;
+
+    const doctor = await prisma.doctor.update({
+      where:{
+        id:Number(id)
+      },
+      data:{
+        username: username,
+        specialization: specialization
+      }
+    })
+    res.json({
+    "id": doctor.id,
+    "username": doctor.username,
+    "specialization": doctor.specialization
+})
+  }catch(error){
+    next(error)
+  }
+}
+

@@ -24,7 +24,17 @@ authService.createdoctor = (data)=>{
   return prisma.doctor.create({data})
 }
 
+authService.findUserbyId=(id)=>{
+  return prisma.user.findUnique({
+    where: {id}
+    
+  })
+}
 
-
-
+authService.findDoctorbyId=(id)=>{
+  return prisma.doctor.findUnique({
+    where: {id}
+    
+  })
+}
 export default authService;
